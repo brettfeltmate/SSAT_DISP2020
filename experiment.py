@@ -66,7 +66,7 @@ class SSAT_DISP2020(klibs.Experiment):
         # to each item presented.
 
         self.spatial_array_locs = []
-        offset = deg_to_px(3.0)
+        offset = deg_to_px(4.0)
         for x in range(1, 3):
             for y in range(1, 3):
                 loc1 = [P.screen_c[0] - offset * x, P.screen_c[1] - offset * y]
