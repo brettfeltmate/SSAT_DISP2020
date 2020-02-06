@@ -11,6 +11,7 @@ __author__ = "Brett Feltmate"
 # TODO: Ensure data is appropriately recorded & outputted.
 # TODO: It would be nice to fix the post RSVP stream delay
 # TODO: It would also be nice to find a better way to generate array coordinates
+# TODO: Present splash screen at end
 
 
 # KLibs packages employed
@@ -29,6 +30,8 @@ from klibs.KLResponseCollectors import *
 # External libraries
 import random
 import sdl2
+import itertools
+
 
 # Useful constants
 PRESENT = 'present'
@@ -65,29 +68,21 @@ class SSAT_DISP2020(klibs.Experiment):
         # When it comes time to present stimuli, a random jitter will be applied
         # to each item presented.
 
-        self.spatial_array_locs = []
-        offset = deg_to_px(4.0)
-        for x in range(1, 3):
-            for y in range(1, 3):
-                loc1 = [P.screen_c[0] - offset * x, P.screen_c[1] - offset * y]
-                loc2 = [P.screen_c[0] + offset * x, P.screen_c[1] + offset * y]
-                loc3 = [P.screen_c[0] - offset * x, P.screen_c[1] + offset * y]
-                loc4 = [P.screen_c[0] + offset * x, P.screen_c[1] - offset * y]
+        locs = []
+        offset = deg_to_px(3.0)
 
-                self.spatial_array_locs.append(loc1)
-                self.spatial_array_locs.append(loc2)
-                self.spatial_array_locs.append(loc3)
-                self.spatial_array_locs.append(loc4)
+        for x in range(0, 3):
+            for y in range(0, 3):
 
-            loc5 = [P.screen_c[0] + offset * x, P.screen_c[1]]
-            loc6 = [P.screen_c[0] - offset * x, P.screen_c[1]]
-            loc7 = [P.screen_c[0], P.screen_c[1] + offset * x]
-            loc8 = [P.screen_c[0], P.screen_c[1] - offset * x]
-            self.spatial_array_locs.append(loc5)
-            self.spatial_array_locs.append(loc6)
-            self.spatial_array_locs.append(loc7)
-            self.spatial_array_locs.append(loc8)
+                locs.append([P.screen_c[0] + offset * x, P.screen_c[1] + offset * y])
+                locs.append([P.screen_c[0] - offset * x, P.screen_c[1] - offset * y])
+                locs.append([P.screen_c[0] + offset * x, P.screen_c[1] - offset * y])
+                locs.append([P.screen_c[0] - offset * x, P.screen_c[1] + offset * y])
 
+
+        locs.sort()
+        self.spatial_array_locs = list(loc for loc, _ in itertools.groupby(locs))
+        self.spatial_array_locs.remove([P.screen_c[0], P.screen_c[1]])
 
         coinflip = random.choice([True, False])
 
@@ -265,9 +260,10 @@ class SSAT_DISP2020(klibs.Experiment):
         random.shuffle(spatial_array_locs)
 
         self.item_locs = []
+        jitter = [x * 0.1 for x in range(-3, 4)]
 
         for i in range(0, self.set_size):
-            jitter = [x * 0.1 for x in range(-5, 5)]
+
             x_jitter = deg_to_px(random.choice(jitter))
             y_jitter = deg_to_px(random.choice(jitter))
 
@@ -281,8 +277,8 @@ class SSAT_DISP2020(klibs.Experiment):
         spatial_array = []
 
         if self.present_absent == PRESENT:
-            target_loc = self.item_locs.pop()
-            spatial_array.append([self.target_item, target_loc])
+            self.target_loc = self.item_locs.pop()
+            spatial_array.append([self.target_item, self.target_loc])
 
         for loc in self.item_locs:
             distractor = random.choice(self.distractors)
@@ -293,6 +289,10 @@ class SSAT_DISP2020(klibs.Experiment):
     def present_spatial_array(self, spatial_array):
         fill()
         blit(self.fixation, registration=5, location=P.screen_c)
+
+        if P.development_mode:
+            c = kld.Annulus(deg_to_px(1.0), deg_to_px(0.1), fill=(255, 0, 0, 255))
+            blit(c, registration=5, location=self.target_loc)
         for item in spatial_array:
             blit(item[0], registration=5, location=item[1])
         flip()
